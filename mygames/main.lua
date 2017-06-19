@@ -4,13 +4,14 @@ function love.load()
 		y = 250,
 		speed = 100,
 		width = 30, 
-		height = 100
+		height = 100,
+		direction = 1
 	}
 
 	enemy = {
 		x = 725,
 		y = 250,
-		speed = 100,
+		speed = 1,
 		width = 30, 
 		height = 100
 	}
@@ -18,33 +19,54 @@ function love.load()
 	ball = {
 		x = 400,
 		y = 300,
-		speedX = 50,
-		speedY = 50,
+		speedX = 1,
+		speedY = 1,
 		width = 20,
-		height = 20
+		height = 20,
+		directionX = 50,
+		directionY = 50
 	}
+
+	scorePlayer = 0
+	scoreEnemy = 0
+	gameFinished = false
 
 end
 
 function love.update(dt)
-	movePlayer(dt)
-	moveBall(dt)
+	
 
 	if checkCollision(player, ball) then
-		ball.speedX = ball.speedX + 100
-
-		ball.speedX = ball.speedX * (-1)
-		ball.speedY = ball.speedY * (-1)
+		ball.speedY = love.math.random(1, 2 * ball.speedX)
+		if ball.speedX < 1.8 then
+			ball.speedX = ball.speedX + 0.1
+			
+			ball.directionX = (ball.directionX * (-1)) * ball.speedX 
+			ball.directionY = (ball.directionY * (player.direction)) * ball.speedY
+			player.speed = player.speed + 50 * ball.speedX
+		else
+			ball.directionX = (ball.directionX * (-1)) 
+			ball.directionY = (ball.directionY * (player.direction))
+		end
 	end
 
 	if checkCollision(enemy, ball) then
-		ball.speedX = ball.speedX + 100
-
-		ball.speedX = ball.speedX * (-1)
-		ball.speedY = ball.speedY * (-1)
+		ball.speedY = love.math.random(1, 2 * ball.speedX)
+		if ball.speedX < 1.8 then
+			ball.speedX = ball.speedX + 0.1
+			
+			enemy.speed = enemy.speed + 2.5
+			ball.directionX = (ball.directionX * (-1)) * ball.speedX 
+			ball.directionY = (ball.directionY * (-1)) * ball.speedY
+		else
+			ball.directionX = (ball.directionX * (-1))
+			ball.directionY = (ball.directionY * (-1))
+		end
 	end
 
-	enemy.y = ball.y - (enemy.height / 2)
+	movePlayer(dt)
+	moveBall(dt)
+	enemy.y = lerp(enemy.y, ball.y - enemy.height / 2,  enemy.speed * dt)
 
 	if enemy.y >= love.graphics.getHeight() - enemy.height then
 		enemy.y = love.graphics.getHeight() - enemy.height
@@ -52,19 +74,45 @@ function love.update(dt)
 		enemy.y = 0
 	end
 
+	if scorePlayer == 5 or scoreEnemy == 5 then
+		gameFinished = true 
+		player.speed = 0
+		ball.speedX = 0
+		ball.speedY = 0
+	end
+
+	if gameFinished == true and love.keyboard.isDown("r") then
+		gameFinished = false 
+		player.speed = 100
+		ball.speedX = 1
+		ball.speedY = 1
+		scorePlayer = 0
+		scoreEnemy = 0
+	end
 end
 
 function love.draw()
 	love.graphics.rectangle("fill", player.x, player.y, player.width, player.height)
 	love.graphics.rectangle("fill", enemy.x, enemy.y, enemy.width, enemy.height)
 	love.graphics.circle("fill", ball.x, ball.y, ball.width / 2)
+	love.graphics.print(scorePlayer .. "|" .. scoreEnemy, love.graphics.getWidth() / 2 - 50, 50,0,5,5);
+
+	if gameFinished == true then
+		if scorePlayer == 5 then
+			love.graphics.print("You Win, R to Restart", love.graphics.getWidth() / 2 - 30, love.graphics.getHeight() / 2 , 0, 3, 3);
+		elseif scoreEnemy == 5 then
+			love.graphics.print("You Lose, R to Restart", love.graphics.getWidth() / 2 - 30, love.graphics.getHeight() / 2 , 0, 3, 3);
+		end
+	end
 end
 
 function movePlayer(dt)
 	if love.keyboard.isDown("w") then
 		player.y = player.y - (player.speed * dt)
+		player.direction = 1
 	elseif love.keyboard.isDown("s") then
 		player.y = player.y + (player.speed * dt)
+		player.direction = -1
 	end
 
 	if player.y >= love.graphics.getHeight() - player.height then
@@ -76,24 +124,40 @@ function movePlayer(dt)
 end
 
 function moveBall(dt)
-	ball.x = ball.x + (ball.speedX * dt)
-	ball.y = ball.y + (ball.speedY * dt)
+	ball.x = ball.x + (ball.directionX * dt)
+	ball.y = ball.y + (ball.directionY * dt)
 
 	if ball.x >= love.graphics.getWidth() - 10 then
-		ball.speedX = ball.speedX * (-1)
+		ball.x = love.graphics.getWidth() / 2
+		ball.y = love.graphics.getHeight() / 2
+		scorePlayer = scorePlayer + 1
+		ball.speedX = 1.0
+		ball.speedY = 1.0
+		ball.directionX = 50
+		ball.directionY = 50
+		player.speed = 100
+		enemy.speed = 1
+
 	elseif ball.x <= 5 then 
-		ball.speedX = ball.speedX * (-1)
+		ball.x = love.graphics.getWidth() / 2
+		ball.y = love.graphics.getHeight() / 2
+		ball.speedX = 1.0
+		ball.speedY = 1.0
+		ball.directionX = 50
+		ball.directionY = 50
+		player.speed = 100
+		scoreEnemy = scoreEnemy + 1
+		enemy.speed = 1
 	end
 
 	if ball.y >= love.graphics.getHeight() - 10 then
-		ball.speedY = ball.speedY * (-1)
+		ball.directionY = (ball.directionY * (-1))
 	elseif ball.y <= 5 then
-		ball.speedY = ball.speedY * (-1)
+		ball.directionY = (ball.directionY * (-1))
 	end	
 end
 
 function checkCollision(a, b)
-    --With locals it's common usage to use underscores instead of camelCasing
     local a_left = a.x
     local a_right = a.x + a.width
     local a_top = a.y
@@ -118,4 +182,8 @@ function checkCollision(a, b)
         --If one of these statements is false, return false.
         return false
     end
+end
+
+function lerp(a, b, t)
+	return (1 - t) * a + t * b
 end
