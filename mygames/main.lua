@@ -31,12 +31,19 @@ function love.load()
 	scoreEnemy = 0
 	gameFinished = false
 
+	font = love.graphics.newFont(50)
+	love.graphics.setFont(font)
+
+	ballSprite = love.graphics.newImage("ball.png")
+
 end
 
 function love.update(dt)
 	
 
 	if checkCollision(player, ball) then
+		ball.x = player.x + player.width
+
 		ball.speedY = love.math.random(1, 2 * ball.speedX)
 		if ball.speedX < 1.8 then
 			ball.speedX = ball.speedX + 0.1
@@ -51,6 +58,8 @@ function love.update(dt)
 	end
 
 	if checkCollision(enemy, ball) then
+		ball.x = enemy.x - (ball.width) 
+
 		ball.speedY = love.math.random(1, 2 * ball.speedX)
 		if ball.speedX < 1.8 then
 			ball.speedX = ball.speedX + 0.1
@@ -66,6 +75,7 @@ function love.update(dt)
 
 	movePlayer(dt)
 	moveBall(dt)
+
 	enemy.y = lerp(enemy.y, ball.y - enemy.height / 2,  enemy.speed * dt)
 
 	if enemy.y >= love.graphics.getHeight() - enemy.height then
@@ -79,6 +89,10 @@ function love.update(dt)
 		player.speed = 0
 		ball.speedX = 0
 		ball.speedY = 0
+		ball.directionX = 0
+		ball.directionY = 0
+		ball.x = 400
+		ball.y = 300
 	end
 
 	if gameFinished == true and love.keyboard.isDown("r") then
@@ -88,20 +102,22 @@ function love.update(dt)
 		ball.speedY = 1
 		scorePlayer = 0
 		scoreEnemy = 0
+		ball.directionX = 50
+		ball.directionY = 50
 	end
 end
 
 function love.draw()
 	love.graphics.rectangle("fill", player.x, player.y, player.width, player.height)
 	love.graphics.rectangle("fill", enemy.x, enemy.y, enemy.width, enemy.height)
-	love.graphics.circle("fill", ball.x, ball.y, ball.width / 2)
-	love.graphics.print(scorePlayer .. "|" .. scoreEnemy, love.graphics.getWidth() / 2 - 50, 50,0,5,5);
+	love.graphics.draw(ballSprite, ball.x, ball.y)
+	love.graphics.print(scorePlayer .. "|" .. scoreEnemy, love.graphics.getWidth() / 2 - 50, 50);
 
 	if gameFinished == true then
 		if scorePlayer == 5 then
-			love.graphics.print("You Win, R to Restart", love.graphics.getWidth() / 2 - 30, love.graphics.getHeight() / 2 , 0, 3, 3);
+			love.graphics.print("You Win, R to Restart", love.graphics.getWidth() / 2 - 300, love.graphics.getHeight() / 2 , 0);
 		elseif scoreEnemy == 5 then
-			love.graphics.print("You Lose, R to Restart", love.graphics.getWidth() / 2 - 30, love.graphics.getHeight() / 2 , 0, 3, 3);
+			love.graphics.print("You Lose, R to Restart", love.graphics.getWidth() / 2 - 300, love.graphics.getHeight() / 2 , 0);
 		end
 	end
 end
@@ -150,9 +166,11 @@ function moveBall(dt)
 		enemy.speed = 1
 	end
 
-	if ball.y >= love.graphics.getHeight() - 10 then
+	if ball.y >= love.graphics.getHeight() - ball.height then
+		ball.y = love.graphics.getHeight() - ball.height
 		ball.directionY = (ball.directionY * (-1))
-	elseif ball.y <= 5 then
+	elseif ball.y <= 0 then
+		ball.y = 0
 		ball.directionY = (ball.directionY * (-1))
 	end	
 end
@@ -168,18 +186,17 @@ function checkCollision(a, b)
     local b_top = b.y
     local b_bottom = b.y + b.height
 
-    --If Red's right side is further to the right than Blue's left side.
+    
     if a_right > b_left and
-    --and Red's left side is further to the left than Blue's right side.
+    
     a_left < b_right and
-    --and Red's bottom side is further to the bottom than Blue's top side.
+    
     a_bottom > b_top and
-    --and Red's top side is further to the top than Blue's bottom side then..
+    
     a_top < b_bottom then
-        --There is collision!
+
         return true
     else
-        --If one of these statements is false, return false.
         return false
     end
 end
